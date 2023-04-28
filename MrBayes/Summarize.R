@@ -1,6 +1,6 @@
 library("TreeTools")
 dataset <- "Rotadiscus_Data_S2.nex"
-burninF <- 0.25
+burninF <- 0.2
 outgroup <- "Cnidaria"
 
 escapeDataset <- gsub("([\\-\\.])", "\\\\\\1", dataset)
@@ -27,18 +27,27 @@ burnOff <- lapply(mbTrees, function (trees) {
   trees[(nTree * burninF):nTree]
 })
 burntOff <- RootTree(do.call(c, burnOff), outgroup)
+cons <- Consensus(burntOff, 0.5)
 
-# Reduce to key relationships
-myFive <- c("Cnidaria", "Vertebrata", "Rotadiscus", "Echinoidea", "Saccoglossus")
-shrunk <- KeepTip(burntOff, myFive) |>
-  RenumberTips(myFive)
-topols <- vapply(as.TreeNumber(shrunk), as.integer, integer(1))
-probs <- 100 * table(topols, dnn = NULL) / length(topols)
-paste(vapply(
-  names(probs),
-  function(x) write.tree(as.phylo(as.integer(x), tipLabels = myFive)),
-  ""), signif(probs), "%"
-)
+oPar <- par(mar = rep(0, 4), cex = 0.8)
+plot(cons)
+par(oPar)
 
-text(barplot(probs), probs, labels = signif(probs), xpd = NA, pos = 3)
+Summary <- function(trees) {
+  # Reduce to key relationships
+  myFive <- c("Cnidaria", "Vertebrata", "Rotadiscus",
+              "Echinoidea", "Saccoglossus")
+  shrunk <- KeepTip(trees, myFive) |>
+    RenumberTips(myFive)
+  topols <- vapply(as.TreeNumber(shrunk), as.integer, integer(1))
+  probs <- 100 * table(topols, dnn = NULL) / length(topols)
+  cat(paste(vapply(
+    names(probs),
+    function(x) write.tree(as.phylo(as.integer(x), tipLabels = myFive)),
+    ""), signif(probs), "%\n"
+  ))
+  
+  text(barplot(probs), probs, labels = signif(probs), xpd = NA, pos = 3)
+}
 
+Summary(burntOff)

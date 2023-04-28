@@ -1,4 +1,4 @@
-source("common.R")
+source("../R/common.R")
 
 searchRepeats <- 3 # Number of times to continue search at each k
 kValues <- c(10, 40, 3, 20, 6) # Concavity constants for implied weighting

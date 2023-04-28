@@ -4,13 +4,16 @@ getwd()
 
 # If getwd() does not contain the relevant files, set wd to working directory
 wd <- "./"
-outgroup <- c("Tubiluchus_priapulida") # Specify taxa on which to root tree
+outgroup <- c("") # Specify taxa on which to root tree
 
-source(paste0(wd, "/common.R"))
-source(paste0(wd, "/plot.R"))
+source(paste0(wd, "../R/common.R"))
+source(paste0(wd, "../R/plot.R"))
 
 latest <- LatestMatrix(wd)
 dat <- ReadAsPhyDat(latest)
+if (outgroup == "") {
+  outgroup <- names(dat)[1]
+}
 treeFiles <- list.files(
   path = wd,
   pattern = paste0(".+_", sub("^.*/", "", latest), ".trees"),
@@ -20,9 +23,19 @@ treeFiles <- list.files(
 for (treeFile in treeFiles) {
   trees <- read.nexus(treeFile)
   
+  # Ignore outgroup taxa that aren't in tree
+  og <- intersect(outgroup, TipLabels(trees)[[1]])
+  if (length(og)) {
+    # Root trees on outgroup
+    trees <- RootTree(trees, og)
+  }
+  rogues <- Rogue::QuickRogue(trees, p = 1)
+  cons <- SortTree(ConsensusWithout(trees, rogues[-1, "taxon"]))
+  
   pdf(gsub(".trees", ".pdf", treeFile, fixed = TRUE), 
       width = 8, height = 10)
-  RoguePlot(trees, outgroup)
+  
+  ColPlot(cons, ec = "black")
   if (nrow(rogues) > 1) {
     legend("topleft", rogues[-1, "taxon"], bty = "n", lty = 2)
   }
@@ -78,3 +91,4 @@ for (treeFile in treeFiles) {
   dev.off()
 }
 
+message(" # # # Complete # # # ")
